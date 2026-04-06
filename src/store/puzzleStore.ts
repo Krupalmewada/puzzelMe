@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { AppState, PieceCount, PuzzlePiece, GridConfig, PuzzleStatus } from '../types/puzzle'
+import type { AppState, PieceCount, PuzzlePiece, GridConfig, PuzzleStatus } from '../types/puzzle'
 
 interface PuzzleStore extends AppState {
   setImage: (url: string) => void
