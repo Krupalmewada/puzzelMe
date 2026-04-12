@@ -9,7 +9,7 @@ import SuggestionCard from "../features/solving/SuggestionCard";
 import PuzzleGrid from "../features/solving/PuzzleGrid";
 import { usePuzzleStore } from "../store/puzzleStore";
 import { useMatcher, type MatchResult } from "../hooks/useMatcher";
-import { getPixelVector } from "../utils/colorHistogram";
+import { spatialHistogramFromUrl } from "../utils/colorHistogram";
 
 export default function SolvingPage() {
   const navigate = useNavigate();
@@ -81,22 +81,18 @@ export default function SolvingPage() {
     setScanning(true);
     setMatches([]);
 
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
-      ctx.drawImage(img, 0, 0);
-      const embedding = getPixelVector(canvas);
-      const results = findMatches(embedding, 25) // get more candidates
-        .filter((r) => r.score > 0) // only positive matches
-        .slice(0, 5); // top 5
+    try {
+      const embedding = await spatialHistogramFromUrl(uploadedPiece);
+      const results = findMatches(embedding, 100)
+        .filter((r) => r.score > 0)
+        .slice(0, 5);
       setMatches(results);
       if (results[0]) setHighlightId(results[0].piece.id);
-      setScanning(false);
-    };
-    img.src = uploadedPiece;
+    } catch (err) {
+      console.error("Matching failed:", err);
+    }
+
+    setScanning(false);
   }, [uploadedPiece, findMatches]);
 
   return (

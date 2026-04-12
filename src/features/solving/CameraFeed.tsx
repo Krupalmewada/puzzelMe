@@ -31,7 +31,7 @@ export default function CameraFeed({
   useEffect(() => {
     if (!isReady || !scanning) return;
 
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       if (videoRef.current && debugCanvasRef.current) {
         const video = videoRef.current;
         const canvas = debugCanvasRef.current;
@@ -54,9 +54,9 @@ export default function CameraFeed({
         );
       }
 
-      const embedding = captureEmbedding();
+      const embedding = await captureEmbedding();
       if (embedding) onEmbeddingCapture(embedding);
-    }, 1500);
+    }, 3000); // 3s to give API time to respond
 
     return () => clearInterval(interval);
   }, [isReady, scanning, captureEmbedding]);

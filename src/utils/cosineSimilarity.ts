@@ -1,28 +1,24 @@
+/**
+ * Cosine similarity on per-zone L2-normalized histograms.
+ *
+ * Because each zone is individually L2-normalised before the vectors are
+ * concatenated, the dot product equals the average zone cosine similarity.
+ * Two pieces with different zone patterns → low score.
+ * Two pieces with matching zone patterns → high score.
+ * Global statistics (same image source) no longer inflate all scores.
+ */
+
 export function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0, normA = 0, normB = 0
+  let dot = 0, na = 0, nb = 0
   for (let i = 0; i < a.length; i++) {
     dot += a[i] * b[i]
-    normA += a[i] * a[i]
-    normB += b[i] * b[i]
+    na  += a[i] * a[i]
+    nb  += b[i] * b[i]
   }
-  if (normA === 0 || normB === 0) return 0
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB))
-}
-
-function avgBrightness(v: number[]): number {
-  let sum = 0
-  for (let i = 0; i < v.length; i++) sum += v[i]
-  return sum / v.length
+  if (na === 0 || nb === 0) return 0
+  return dot / (Math.sqrt(na) * Math.sqrt(nb))
 }
 
 export function combinedScore(a: number[], b: number[]): number {
-  const cosine = cosineSimilarity(a, b)
-
-  // penalize if brightness is very different
-  const brightA = avgBrightness(a)
-  const brightB = avgBrightness(b)
-  const brightDiff = Math.abs(brightA - brightB)
-  const brightPenalty = brightDiff * 2 // heavy penalty for brightness mismatch
-
-  return Math.max(0, cosine - brightPenalty)
+  return cosineSimilarity(a, b)
 }
