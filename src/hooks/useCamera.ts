@@ -1,7 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
-import { spatialHistogramFromUrl } from '../utils/colorHistogram'
+import { queryHistogramFromUrl, type HistogramConfig } from '../utils/colorHistogram'
 
-export function useCamera() {
+export function useCamera(cfg: HistogramConfig) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isReady, setIsReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,9 +46,9 @@ export function useCamera() {
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!
     ctx.drawImage(video, startX, startY, cropSize, cropSize, 0, 0, 224, 224)
 
-    const dataUrl = canvas.toDataURL('image/png')
-    return spatialHistogramFromUrl(dataUrl)
-  }, [isReady])
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+    return queryHistogramFromUrl(dataUrl, cfg)
+  }, [isReady, cfg])
 
   return { videoRef, isReady, error, startCamera, stopCamera, captureEmbedding }
 }

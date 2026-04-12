@@ -9,12 +9,13 @@ import SuggestionCard from "../features/solving/SuggestionCard";
 import PuzzleGrid from "../features/solving/PuzzleGrid";
 import { usePuzzleStore } from "../store/puzzleStore";
 import { useMatcher, type MatchResult } from "../hooks/useMatcher";
-import { spatialHistogramFromUrl } from "../utils/colorHistogram";
+import { queryHistogramFromUrl, histogramConfigForCount } from "../utils/colorHistogram";
 
 export default function SolvingPage() {
   const navigate = useNavigate();
-  const { pieces, placedPieceIds, markPlaced, setStatus, setEndTime, grid } =
+  const { pieces, placedPieceIds, markPlaced, setStatus, setEndTime, grid, pieceCount } =
     usePuzzleStore();
+  const cfg = histogramConfigForCount(pieceCount ?? 100);
   const { findMatches } = useMatcher(pieces);
 
   const [matches, setMatches] = useState<MatchResult[]>([]);
@@ -82,7 +83,7 @@ export default function SolvingPage() {
     setMatches([]);
 
     try {
-      const embedding = await spatialHistogramFromUrl(uploadedPiece);
+      const embedding = await queryHistogramFromUrl(uploadedPiece, cfg);
       const results = findMatches(embedding, 100)
         .filter((r) => r.score > 0)
         .slice(0, 5);
@@ -191,6 +192,7 @@ export default function SolvingPage() {
                   onEmbeddingCapture={handleEmbedding}
                   isActive={cameraActive}
                   scanning={scanning}
+                  cfg={cfg}
                 />
                 <Button
                   label={scanning ? "Scanning..." : "🔍 Scan This Piece"}

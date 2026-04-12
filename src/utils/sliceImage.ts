@@ -1,23 +1,18 @@
 import type { PuzzlePiece, GridConfig } from '../types/puzzle'
-import { spatialHistogramFromUrl } from './colorHistogram'
+import { spatialHistogramFromUrl, histogramConfigForCount } from './colorHistogram'
 
 export async function sliceImage(
   imageUrl: string,
-  grid: GridConfig
+  grid: GridConfig,
+  pieceCount: number,
 ): Promise<PuzzlePiece[]> {
   return new Promise((resolve) => {
     const img = new Image()
+    const cfg = histogramConfigForCount(pieceCount)
 
     img.onload = async () => {
-      console.log('=== SLICE DEBUG ===')
-      console.log('Image size:', img.width, 'x', img.height)
-      console.log('Grid:', grid.cols, 'cols x', grid.rows, 'rows')
-
-      const pieceWidth = Math.floor(img.width / grid.cols)
+      const pieceWidth  = Math.floor(img.width  / grid.cols)
       const pieceHeight = Math.floor(img.height / grid.rows)
-
-      console.log('Piece size:', pieceWidth, 'x', pieceHeight)
-      console.log('Total pieces:', grid.cols * grid.rows)
 
       if (img.width === 0 || img.height === 0) {
         console.error('Image has zero dimensions!')
@@ -34,40 +29,22 @@ export async function sliceImage(
       for (let row = 0; row < grid.rows; row++) {
         for (let col = 0; col < grid.cols; col++) {
           const canvas = document.createElement('canvas')
-          canvas.width = pieceWidth
+          canvas.width  = pieceWidth
           canvas.height = pieceHeight
           const ctx = canvas.getContext('2d', { willReadFrequently: true })
 
-          if (!ctx) {
-            console.error('Canvas context failed at', row, col)
-            continue
-          }
+          if (!ctx) continue
 
           ctx.drawImage(
             img,
-            col * pieceWidth,
-            row * pieceHeight,
-            pieceWidth,
-            pieceHeight,
-            0, 0,
-            pieceWidth,
-            pieceHeight
+            col * pieceWidth, row * pieceHeight, pieceWidth, pieceHeight,
+            0, 0, pieceWidth, pieceHeight,
           )
 
-          // debug — log first piece pixel color
-          if (row === 0 && col === 0) {
-            const pixel = ctx.getImageData(0, 0, 1, 1).data
-            console.log('First piece top-left pixel RGB:', pixel[0], pixel[1], pixel[2])
-          }
+          const imageDataUrl = canvas.toDataURL('image/jpeg', 0.85)
+          if (imageDataUrl === 'data:,') continue
 
-          const imageDataUrl = canvas.toDataURL('image/png')
-          // check data url is valid
-          if (imageDataUrl === 'data:,') {
-            console.error('Empty canvas at piece', row, col)
-            continue
-          }
-
-          const embedding = await spatialHistogramFromUrl(imageDataUrl)
+          const embedding = await spatialHistogramFromUrl(imageDataUrl, cfg)
 
           pieces.push({
             id: `${row}-${col}`,
@@ -82,17 +59,10 @@ export async function sliceImage(
         }
       }
 
-      console.log('Total pieces sliced:', pieces.length)
-      console.log('First piece dataUrl length:', pieces[0]?.imageDataUrl?.length)
-      console.log('=== END SLICE DEBUG ===')
-
       resolve(pieces)
     }
 
-    img.onerror = (e) => {
-      console.error('Image failed to load!', e)
-    }
-
+    img.onerror = (e) => console.error('Image failed to load!', e)
     img.src = imageUrl
   })
 }

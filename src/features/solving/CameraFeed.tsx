@@ -1,16 +1,19 @@
 import { useEffect, useRef } from "react";
 import { useCamera } from "../../hooks/useCamera";
+import { type HistogramConfig } from "../../utils/colorHistogram";
 
 interface CameraFeedProps {
   onEmbeddingCapture: (embedding: number[]) => void;
   isActive: boolean;
   scanning: boolean;
+  cfg: HistogramConfig;
 }
 
 export default function CameraFeed({
   onEmbeddingCapture,
   isActive,
   scanning,
+  cfg,
 }: CameraFeedProps) {
   const {
     videoRef,
@@ -19,7 +22,7 @@ export default function CameraFeed({
     startCamera,
     stopCamera,
     captureEmbedding,
-  } = useCamera();
+  } = useCamera(cfg);
   const debugCanvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -31,35 +34,24 @@ export default function CameraFeed({
   useEffect(() => {
     if (!isReady || !scanning) return;
 
-    const interval = setInterval(async () => {
-      if (videoRef.current && debugCanvasRef.current) {
-        const video = videoRef.current;
-        const canvas = debugCanvasRef.current;
-        canvas.width = 224;
-        canvas.height = 224;
-        const ctx = canvas.getContext("2d")!;
-        const cropSize = Math.min(video.videoWidth, video.videoHeight) * 0.5;
-        const startX = (video.videoWidth - cropSize) / 2;
-        const startY = (video.videoHeight - cropSize) / 2;
-        ctx.drawImage(
-          video,
-          startX,
-          startY,
-          cropSize,
-          cropSize,
-          0,
-          0,
-          224,
-          224,
-        );
-      }
+    // Update debug canvas preview
+    if (videoRef.current && debugCanvasRef.current) {
+      const video = videoRef.current;
+      const canvas = debugCanvasRef.current;
+      canvas.width = 224;
+      canvas.height = 224;
+      const ctx = canvas.getContext("2d")!;
+      const cropSize = Math.min(video.videoWidth, video.videoHeight) * 0.5;
+      const startX = (video.videoWidth - cropSize) / 2;
+      const startY = (video.videoHeight - cropSize) / 2;
+      ctx.drawImage(video, startX, startY, cropSize, cropSize, 0, 0, 224, 224);
+    }
 
-      const embedding = await captureEmbedding();
+    // Matching is local + instant — capture and match immediately on scan press
+    captureEmbedding().then((embedding) => {
       if (embedding) onEmbeddingCapture(embedding);
-    }, 3000); // 3s to give API time to respond
-
-    return () => clearInterval(interval);
-  }, [isReady, scanning, captureEmbedding]);
+    });
+  }, [isReady, scanning]);
 
   return (
     <div className="flex flex-col gap-2">

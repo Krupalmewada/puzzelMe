@@ -25,8 +25,8 @@ export default function SetupPage() {
   const [localImage, setLocalImage] = useState<string | null>(originalImage);
   const [localCount, setLocalCount] = useState<PieceCount | null>(pieceCount);
   const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
-  const [puzzleWidth, setPuzzleWidth] = useState<number>(12);
-  const [puzzleHeight, setPuzzleHeight] = useState<number>(9);
+  const [puzzleWidth, setPuzzleWidth] = useState<string>("12");
+  const [puzzleHeight, setPuzzleHeight] = useState<string>("9");
   const [unit, setUnit] = useState<"in" | "cm">("in");
 
   const handleImageUpload = (url: string) => {
@@ -36,33 +36,36 @@ export default function SetupPage() {
     img.src = url;
   };
 
+  const w = parseFloat(puzzleWidth) || 0;
+  const h = parseFloat(puzzleHeight) || 0;
+
   const handleUnitToggle = (newUnit: "in" | "cm") => {
     if (newUnit === unit) return;
     if (newUnit === "cm") {
-      setPuzzleWidth(Math.round(puzzleWidth * 2.54));
-      setPuzzleHeight(Math.round(puzzleHeight * 2.54));
+      setPuzzleWidth(w ? String(Math.round(w * 2.54)) : "");
+      setPuzzleHeight(h ? String(Math.round(h * 2.54)) : "");
     } else {
-      setPuzzleWidth(Math.round((puzzleWidth / 2.54) * 10) / 10);
-      setPuzzleHeight(Math.round((puzzleHeight / 2.54) * 10) / 10);
+      setPuzzleWidth(w ? String(Math.round((w / 2.54) * 10) / 10) : "");
+      setPuzzleHeight(h ? String(Math.round((h / 2.54) * 10) / 10) : "");
     }
     setUnit(newUnit);
   };
 
   const getGridPreview = () => {
-    if (!localCount) return null;
-    const grid = getGridConfig(localCount, puzzleWidth, puzzleHeight);
-    const pieceW = (puzzleWidth / grid.cols).toFixed(1);
-    const pieceH = (puzzleHeight / grid.rows).toFixed(1);
+    if (!localCount || !w || !h) return null;
+    const grid = getGridConfig(localCount, w, h);
+    const pieceW = (w / grid.cols).toFixed(1);
+    const pieceH = (h / grid.rows).toFixed(1);
     return { grid, pieceW, pieceH };
   };
 
   const preview = getGridPreview();
   const canProceed =
-    localImage && localCount && puzzleWidth > 0 && puzzleHeight > 0;
+    localImage && localCount && w > 0 && h > 0;
 
   const handleStart = () => {
     if (!localImage || !localCount) return;
-    const grid = getGridConfig(localCount, puzzleWidth, puzzleHeight);
+    const grid = getGridConfig(localCount, w, h);
     setImage(localImage);
     setPieceCount(localCount);
     setGrid(grid);
@@ -140,7 +143,7 @@ export default function SetupPage() {
                 <input
                   type="number"
                   value={puzzleWidth}
-                  onChange={(e) => setPuzzleWidth(Number(e.target.value))}
+                  onChange={(e) => setPuzzleWidth(e.target.value)}
                   className="border border-sky-200 rounded-[12px] px-3 py-2
                     font-body text-sky-700 text-sm bg-white/60
                     focus:outline-none focus:border-sky-400"
@@ -156,7 +159,7 @@ export default function SetupPage() {
                 <input
                   type="number"
                   value={puzzleHeight}
-                  onChange={(e) => setPuzzleHeight(Number(e.target.value))}
+                  onChange={(e) => setPuzzleHeight(e.target.value)}
                   className="border border-sky-200 rounded-[12px] px-3 py-2
                     font-body text-sky-700 text-sm bg-white/60
                     focus:outline-none focus:border-sky-400"

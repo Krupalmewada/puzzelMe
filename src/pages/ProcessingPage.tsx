@@ -9,7 +9,7 @@ import { sliceImage } from '../utils/sliceImage'
 
 export default function ProcessingPage() {
   const navigate = useNavigate()
-  const { originalImage, grid, setPieces, setStatus, setStartTime } = usePuzzleStore()
+  const { originalImage, grid, pieceCount, setPieces, setStatus, setStartTime } = usePuzzleStore()
   const hasStarted = useRef(false)
   const [progress, setProgress] = useState(0)
   const [message, setMessage] = useState('Slicing image...')
@@ -26,7 +26,7 @@ export default function ProcessingPage() {
       setMessage('Slicing image into pieces...')
       setProgress(20)
 
-      const pieces = await sliceImage(originalImage, grid)
+      const pieces = await sliceImage(originalImage, grid, pieceCount ?? 100)
 
       setProgress(80)
       setMessage('Building colour library...')
