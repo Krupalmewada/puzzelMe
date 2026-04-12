@@ -24,16 +24,12 @@ export default function SetupPage() {
   } = usePuzzleStore();
   const [localImage, setLocalImage] = useState<string | null>(originalImage);
   const [localCount, setLocalCount] = useState<PieceCount | null>(pieceCount);
-  const [imgSize, setImgSize] = useState<{ w: number; h: number } | null>(null);
   const [puzzleWidth, setPuzzleWidth] = useState<string>("12");
   const [puzzleHeight, setPuzzleHeight] = useState<string>("9");
   const [unit, setUnit] = useState<"in" | "cm">("in");
 
   const handleImageUpload = (url: string) => {
     setLocalImage(url);
-    const img = new Image();
-    img.onload = () => setImgSize({ w: img.width, h: img.height });
-    img.src = url;
   };
 
   const w = parseFloat(puzzleWidth) || 0;
@@ -101,7 +97,6 @@ export default function SetupPage() {
               <button
                 onClick={() => {
                   setLocalImage(null);
-                  setImgSize(null);
                 }}
                 className="mt-2 text-xs text-sky-400 hover:text-sky-600 font-body transition-colors"
               >

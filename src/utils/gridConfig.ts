@@ -7,13 +7,8 @@ export function getGridConfig(
 ): GridConfig {
   const ratio = width / height
 
-  // calculate ideal cols
-  let cols = Math.round(Math.sqrt(pieceCount * ratio))
-  
-  // adjust rows to get as close as possible to pieceCount
-  let rows = Math.round(pieceCount / cols)
-
-  // fine tune — try cols-1, cols, cols+1 and pick whichever gives closest to pieceCount
+  // calculate ideal cols, then try cols-1, cols, cols+1 and pick closest to pieceCount
+  const cols = Math.round(Math.sqrt(pieceCount * ratio))
   const options = [cols - 1, cols, cols + 1].map(c => {
     if (c <= 0) return null
     const r = Math.round(pieceCount / c)
