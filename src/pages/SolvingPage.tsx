@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
@@ -17,6 +17,11 @@ export default function SolvingPage() {
     usePuzzleStore();
   const cfg = histogramConfigForCount(pieceCount ?? 100);
   const { findMatches } = useMatcher(pieces);
+
+  // pieces are not persisted (too large) — if empty after a refresh, go back to setup
+  useEffect(() => {
+    if (pieces.length === 0) navigate('/setup');
+  }, []);
 
   const [matches, setMatches] = useState<MatchResult[]>([]);
   const [isScanning, setIsScanning] = useState(false);

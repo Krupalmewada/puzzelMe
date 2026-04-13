@@ -45,6 +45,18 @@ export const usePuzzleStore = create<PuzzleStore>()(
     {
       name: 'puzzelme-progress',
 
+      // Only persist the small fields — originalImage and pieces contain
+      // base64 image data and embeddings that easily exceed localStorage's 5MB limit.
+      // placedPieceIds, pieceCount and grid are all we need to survive a refresh.
+      partialize: (state) => ({
+        status:         state.status,
+        pieceCount:     state.pieceCount,
+        grid:           state.grid,
+        placedPieceIds: state.placedPieceIds,
+        startTime:      state.startTime,
+        endTime:        state.endTime,
+      }),
+
       // Set can't be JSON-serialised natively — convert to/from array
       storage: {
         getItem: (key) => {
