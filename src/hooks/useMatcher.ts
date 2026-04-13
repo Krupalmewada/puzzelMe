@@ -1,7 +1,6 @@
 import { useCallback, useRef } from 'react'
 import type { PuzzlePiece } from '../types/puzzle'
 import { combinedScore } from '../utils/cosineSimilarity'
-import { histogramConfigForCount } from '../utils/colorHistogram'
 
 export interface MatchResult {
   piece: PuzzlePiece
