@@ -82,9 +82,16 @@ function l2Normalize(arr: Float32Array, start: number, len: number): void {
 // ─── public API ──────────────────────────────────────────────────────────────
 
 /**
- * Crop a canvas to the bounding box of its coloured (non-background) pixels.
- * Handles white paper, desk surfaces, or any near-uniform background.
- * Returns the original canvas unchanged if content already fills >80%.
+ * Crop a canvas to the bounding box of its puzzle-piece pixels.
+ *
+ * "Content" = coloured AND mid-brightness:
+ *   - Excludes white/light backgrounds (paper): V > 0.88
+ *   - Excludes dark backgrounds (desk, shadows): V < 0.10
+ *   - Excludes near-gray pixels: S < MIN_SAT
+ *
+ * The old saturation-only check let dark wooden desks pass (S~0.2-0.3)
+ * which expanded the bounding box to nearly the full frame, defeating
+ * the crop entirely.
  */
 export function cropToContent(canvas: HTMLCanvasElement): HTMLCanvasElement {
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
@@ -96,8 +103,9 @@ export function cropToContent(canvas: HTMLCanvasElement): HTMLCanvasElement {
   for (let py = 0; py < height; py++) {
     for (let px = 0; px < width; px++) {
       const i = (py * width + px) * 4
-      const [, s] = rgbToHsv(data[i], data[i + 1], data[i + 2])
-      if (s >= MIN_SAT) {
+      const [, s, v] = rgbToHsv(data[i], data[i + 1], data[i + 2])
+      // Skip white/bright backgrounds, dark desk surfaces, and near-grays
+      if (s >= MIN_SAT && v > 0.10 && v < 0.88) {
         if (px < minX) minX = px
         if (px > maxX) maxX = px
         if (py < minY) minY = py

@@ -37,7 +37,7 @@ export function useCamera(cfg: HistogramConfig) {
 
     const video = videoRef.current
     const canvas = document.createElement('canvas')
-    const cropSize = Math.min(video.videoWidth, video.videoHeight) * 0.5
+    const cropSize = Math.min(video.videoWidth, video.videoHeight) * 0.6
     const startX = (video.videoWidth - cropSize) / 2
     const startY = (video.videoHeight - cropSize) / 2
 
