@@ -54,16 +54,16 @@ export interface HistogramConfig {
 /**
  * Scale histogram resolution to piece count.
  *
- *  ≤100  pieces → 4×4 zones, 18 hue bins, 6 gray  (384 floats)
- *  ≤250  pieces → 5×5 zones, 24 hue bins, 6 gray  (750 floats)
- *  ≤500  pieces → 7×7 zones, 28 hue bins, 8 gray  (1764 floats)
- *  >500  pieces → 8×8 zones, 32 hue bins, 8 gray  (2560 floats)
+ *  ≤100  pieces →  5×5  zones, 24 hue bins, 8 gray   (800 floats)
+ *  ≤250  pieces →  7×7  zones, 30 hue bins, 8 gray   (1862 floats)
+ *  ≤500  pieces →  8×8  zones, 40 hue bins, 10 gray  (3200 floats)
+ *  >500  pieces → 10×10 zones, 48 hue bins, 12 gray  (6000 floats)
  */
 export function histogramConfigForCount(pieceCount: number): HistogramConfig {
-  if (pieceCount <= 100) return { zones: 4, hueBins: 18, grayBins: 6, resize: 64 }
-  if (pieceCount <= 250) return { zones: 5, hueBins: 24, grayBins: 6, resize: 80 }
-  if (pieceCount <= 500) return { zones: 7, hueBins: 28, grayBins: 8, resize: 112 }
-  return                        { zones: 8, hueBins: 32, grayBins: 8, resize: 128 }
+  if (pieceCount <= 100) return { zones: 5,  hueBins: 24, grayBins: 8,  resize: 80  }
+  if (pieceCount <= 250) return { zones: 7,  hueBins: 30, grayBins: 8,  resize: 112 }
+  if (pieceCount <= 500) return { zones: 8,  hueBins: 40, grayBins: 10, resize: 160 }
+  return                        { zones: 10, hueBins: 48, grayBins: 12, resize: 200 }
 }
 
 const DEFAULT_CONFIG: HistogramConfig = histogramConfigForCount(100)
