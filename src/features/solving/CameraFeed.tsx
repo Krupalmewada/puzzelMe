@@ -180,7 +180,7 @@ export default function CameraFeed({
             {/* Instruction */}
             <div className="absolute bottom-3 w-full flex justify-center pointer-events-none">
               <p className="font-body text-white/80 text-[10px] bg-black/30 px-2 py-0.5 rounded-full">
-                Point at piece on white paper
+                Place piece on white paper · keep in centre
               </p>
             </div>
 
