@@ -41,13 +41,14 @@ export default function SolvingPage() {
     (embedding: number[]) => {
       setIsScanning(true);
       lastQueryEmbedding.current = embedding;
-      const results = findMatches(embedding, 10);
+      // Pass placedPieceIds so already-placed pieces are excluded from results
+      const results = findMatches(embedding, 10, placedPieceIds);
       setMatches(results);
       if (results[0]) setHighlightId(results[0].piece.id);
       setScanning(false);
       setIsScanning(false);
     },
-    [findMatches],
+    [findMatches, placedPieceIds],
   );
 
   const handleConfirm = (id: string) => {
@@ -95,7 +96,8 @@ export default function SolvingPage() {
 
     try {
       const embedding = await queryHistogramFromUrl(uploadedPiece, cfg);
-      const results = findMatches(embedding, 100)
+      // Pass placedPieceIds so already-placed pieces are excluded from results
+      const results = findMatches(embedding, 100, placedPieceIds)
         .filter((r) => r.score > 0)
         .slice(0, 10);
       setMatches(results);
@@ -105,7 +107,7 @@ export default function SolvingPage() {
     }
 
     setScanning(false);
-  }, [uploadedPiece, findMatches]);
+  }, [uploadedPiece, findMatches, placedPieceIds]);
 
   return (
     <div

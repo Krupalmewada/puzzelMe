@@ -2,6 +2,17 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import { queryHistogramFromUrl, type HistogramConfig } from '../utils/colorHistogram'
 import type { PieceRegion } from '../utils/detectPiece'
 
+/**
+ * Higher capture resolution (512×512) preserves more detail for the histogram
+ * pipeline. The histogram computation does its own downscale to the config's
+ * `resize` value, so feeding it a higher-res input means less information is
+ * lost at the capture stage.
+ *
+ * Also uses PNG encoding (lossless) instead of JPEG to avoid introducing
+ * compression artifacts that differ from the clean reference crops.
+ */
+const CAPTURE_SIZE = 512
+
 export function useCamera(cfg: HistogramConfig) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isReady, setIsReady] = useState(false)
@@ -37,6 +48,8 @@ export function useCamera(cfg: HistogramConfig) {
    * Capture the piece and compute its histogram embedding.
    * If a detected region is provided, crop to that region exactly.
    * Otherwise fall back to the centre 60% of the frame.
+   *
+   * v2: Higher capture resolution (512px) and PNG encoding.
    */
   const captureEmbedding = useCallback(async (
     region?: PieceRegion | null
@@ -56,12 +69,14 @@ export function useCamera(cfg: HistogramConfig) {
     }
 
     const canvas = document.createElement('canvas')
-    canvas.width = 224
-    canvas.height = 224
+    canvas.width = CAPTURE_SIZE
+    canvas.height = CAPTURE_SIZE
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-    ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, 224, 224)
+    ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, CAPTURE_SIZE, CAPTURE_SIZE)
 
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+    // Use PNG (lossless) to avoid JPEG compression artifacts that differ
+    // systematically from clean reference crops
+    const dataUrl = canvas.toDataURL('image/png')
     return queryHistogramFromUrl(dataUrl, cfg)
   }, [isReady, cfg])
 
