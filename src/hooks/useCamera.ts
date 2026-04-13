@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react'
 import { queryHistogramFromUrl, type HistogramConfig } from '../utils/colorHistogram'
+import type { PieceRegion } from '../utils/detectPiece'
 
 export function useCamera(cfg: HistogramConfig) {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -32,19 +33,33 @@ export function useCamera(cfg: HistogramConfig) {
     setIsReady(false)
   }, [])
 
-  const captureEmbedding = useCallback(async (): Promise<number[] | null> => {
+  /**
+   * Capture the piece and compute its histogram embedding.
+   * If a detected region is provided, crop to that region exactly.
+   * Otherwise fall back to the centre 60% of the frame.
+   */
+  const captureEmbedding = useCallback(async (
+    region?: PieceRegion | null
+  ): Promise<number[] | null> => {
     if (!videoRef.current || !isReady) return null
 
     const video = videoRef.current
-    const canvas = document.createElement('canvas')
-    const cropSize = Math.min(video.videoWidth, video.videoHeight) * 0.6
-    const startX = (video.videoWidth - cropSize) / 2
-    const startY = (video.videoHeight - cropSize) / 2
+    let srcX: number, srcY: number, srcW: number, srcH: number
 
+    if (region && region.w > 20 && region.h > 20) {
+      srcX = region.x; srcY = region.y; srcW = region.w; srcH = region.h
+    } else {
+      const cropSize = Math.min(video.videoWidth, video.videoHeight) * 0.6
+      srcX = (video.videoWidth  - cropSize) / 2
+      srcY = (video.videoHeight - cropSize) / 2
+      srcW = cropSize; srcH = cropSize
+    }
+
+    const canvas = document.createElement('canvas')
     canvas.width = 224
     canvas.height = 224
     const ctx = canvas.getContext('2d', { willReadFrequently: true })!
-    ctx.drawImage(video, startX, startY, cropSize, cropSize, 0, 0, 224, 224)
+    ctx.drawImage(video, srcX, srcY, srcW, srcH, 0, 0, 224, 224)
 
     const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
     return queryHistogramFromUrl(dataUrl, cfg)

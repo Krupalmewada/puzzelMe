@@ -15,6 +15,19 @@
  *     Hue is invariant to brightness changes between a photo and a render,
  *     and histograms within a zone are robust to small crop shifts.
  *
+ * WHY NO GRADIENT BINS:
+ *  JPEG compression creates spurious block-boundary edges in camera photos
+ *  but not in clean reference crops. Gradient histograms look systematically
+ *  different between photo and reference, adding noise that overwhelms the
+ *  color signal.
+ *
+ * WHY SKIP WHITE AND DARK PIXELS IN HISTOGRAM:
+ *  After cropToContent removes the outer white border, the concave areas of
+ *  the puzzle-piece shape still contain white paper. Those V≈1.0 pixels fall
+ *  into the highest gray bin and skew zone data. Reference crops don't have
+ *  this. Skipping extreme-brightness pixels from both ends makes query and
+ *  reference comparable.
+ *
  * Query piece preprocessing:
  *  Photos of physical pieces have a white/background border outside the
  *  irregular piece shape. cropToContent() removes this border before
@@ -27,6 +40,8 @@
  */
 
 const MIN_SAT  = 0.12  // below this → achromatic (hue unreliable)
+const MIN_V    = 0.08  // below this → too dark / shadowed desk
+const MAX_V    = 0.92  // above this → white paper background
 const CROP_PAD = 4     // px padding kept around content when cropping
 
 export interface HistogramConfig {
@@ -40,18 +55,18 @@ export interface HistogramConfig {
  * Scale histogram resolution to piece count.
  *
  *  ≤100  pieces → 4×4 zones, 12 hue bins  (256 floats)
- *  ≤250  pieces → 5×5 zones, 14 hue bins  (475 floats)
- *  ≤500  pieces → 6×6 zones, 16 hue bins  (768 floats)
- *  >500  pieces → 7×7 zones, 18 hue bins  (1127 floats)
+ *  ≤250  pieces → 5×5 zones, 14 hue bins  (450 floats)
+ *  ≤500  pieces → 6×6 zones, 16 hue bins  (720 floats)
+ *  >500  pieces → 7×7 zones, 20 hue bins  (1127 floats)
  */
 export function histogramConfigForCount(pieceCount: number): HistogramConfig {
   if (pieceCount <= 100) return { zones: 4, hueBins: 12, grayBins: 4, resize: 48 }
   if (pieceCount <= 250) return { zones: 5, hueBins: 14, grayBins: 4, resize: 60 }
   if (pieceCount <= 500) return { zones: 6, hueBins: 16, grayBins: 4, resize: 72 }
-  return                        { zones: 7, hueBins: 18, grayBins: 4, resize: 84 }
+  return                        { zones: 7, hueBins: 20, grayBins: 4, resize: 84 }
 }
 
-const DEFAULT_CONFIG = histogramConfigForCount(100)
+const DEFAULT_CONFIG: HistogramConfig = histogramConfigForCount(100)
 
 // ─── internals ───────────────────────────────────────────────────────────────
 
@@ -154,6 +169,11 @@ export function buildZoneHistogram(
       const i = (py * resize + px) * 4
       const [h, s, v] = rgbToHsv(data[i], data[i + 1], data[i + 2])
 
+      // Skip white paper background (including concave areas of piece shape)
+      // and very dark pixels (shadows, dark desk) — they skew zone data and
+      // look different between a camera photo and a clean reference crop.
+      if (v > MAX_V || v < MIN_V) continue
+
       const zx   = Math.min(Math.floor(px / zonePixels), zones - 1)
       const zy   = Math.min(Math.floor(py / zonePixels), zones - 1)
       const z    = zy * zones + zx
@@ -171,7 +191,7 @@ export function buildZoneHistogram(
 
   for (let z = 0; z < zones * zones; z++) {
     const base = z * perZone
-    l2Normalize(out, base,         hueBins)
+    l2Normalize(out, base,           hueBins)
     l2Normalize(out, base + hueBins, grayBins)
   }
 

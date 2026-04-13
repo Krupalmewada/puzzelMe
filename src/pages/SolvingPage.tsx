@@ -16,7 +16,7 @@ export default function SolvingPage() {
   const { pieces, placedPieceIds, markPlaced, setStatus, setEndTime, grid, pieceCount } =
     usePuzzleStore();
   const cfg = histogramConfigForCount(pieceCount ?? 100);
-  const { findMatches } = useMatcher(pieces);
+  const { findMatches, learnFromConfirmation, calibrationCount } = useMatcher(pieces);
 
   // pieces are not persisted (too large) — if empty after a refresh, go back to setup
   useEffect(() => {
@@ -27,6 +27,7 @@ export default function SolvingPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [highlightId, setHighlightId] = useState<string | null>(null);
+  const lastQueryEmbedding = useRef<number[] | null>(null);
   const [cameraActive, setCameraActive] = useState(true);
   const [scanMode, setScanMode] = useState<"camera" | "upload">("camera");
   const [uploadedPiece, setUploadedPiece] = useState<string | null>(null);
@@ -39,7 +40,8 @@ export default function SolvingPage() {
   const handleEmbedding = useCallback(
     (embedding: number[]) => {
       setIsScanning(true);
-      const results = findMatches(embedding, 5);
+      lastQueryEmbedding.current = embedding;
+      const results = findMatches(embedding, 10);
       setMatches(results);
       if (results[0]) setHighlightId(results[0].piece.id);
       setScanning(false);
@@ -49,6 +51,10 @@ export default function SolvingPage() {
   );
 
   const handleConfirm = (id: string) => {
+    if (lastQueryEmbedding.current) {
+      learnFromConfirmation(lastQueryEmbedding.current, id);
+      lastQueryEmbedding.current = null;
+    }
     markPlaced(id);
     setMatches([]);
     setHighlightId(null);
@@ -91,7 +97,7 @@ export default function SolvingPage() {
       const embedding = await queryHistogramFromUrl(uploadedPiece, cfg);
       const results = findMatches(embedding, 100)
         .filter((r) => r.score > 0)
-        .slice(0, 5);
+        .slice(0, 10);
       setMatches(results);
       if (results[0]) setHighlightId(results[0].piece.id);
     } catch (err) {
@@ -116,6 +122,11 @@ export default function SolvingPage() {
           <span className="font-body text-sky-500 text-xs">
             {placed}/{total} placed
           </span>
+          {calibrationCount.current > 0 && (
+            <span className="font-body text-green-500 text-xs">
+              {calibrationCount.current === 1 ? "calibrating..." : `calibrated ×${calibrationCount.current}`}
+            </span>
+          )}
           <button
             onClick={() => {
               if (confirm("Quit this puzzle?")) navigate("/");
